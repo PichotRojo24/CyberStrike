@@ -15,15 +15,17 @@ El objetivo es derribar al oponente del escenario mediante ataques precisos y co
 
 ## ⚙️ Instrucciones para ejecutar el juego
 
-### 1️⃣ Instalar dependencias
+## 1️⃣ Instalar dependencias
 ```bash
 npm install
+```
 
-### ### 2️⃣ Ejecutar en modo desarrollo npm run dev 
+## 2️⃣ Ejecutar en modo desarrollo npm run dev 
 
-### 3️⃣ Abrir en navegador http://localhost:8080 
 
-### 📂 Estructura del proyecto 
+## 3️⃣ Abrir en navegador http://localhost:8080 
+
+## 📂 Estructura del proyecto 
 ├── src/ # Código fuente principal (JS) 
 ├── public/ # Recursos estáticos 
 ├── dist/ # Archivos compilados 
