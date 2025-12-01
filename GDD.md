@@ -153,18 +153,6 @@ Tipografía angular, representando velocidad y energía.
 
 ## 🎧 Aspecto Sonoro
 Música **intensa y electrónica**, con efectos de sonido **exagerados** para reforzar la adrenalina del combate.  
-
-**Ejemplos de música:**
-- `menu-principal.mp3`
-- `combate.mp3`
-
-**Ejemplos de efectos de sonido:**
-- `desenfundar-espada.mp3`
-- `golpeo-con-espada.mp3`
-- `golpeo-normal.mp3`
-- `inicio-combate.mp3`
-- `salto.mp3`
-
 ---
 
 ## 💰 Marketing y Distribución
@@ -177,8 +165,4 @@ Modelo de monetización **Free-to-Play** con:
 
 ---
 
-## 📎 Enlaces de referencia
-🎥 *Inspiraciones visuales y de gameplay:*  
-- [Brawlhalla Gameplay (PC UHD 4K60FPS)]()  
-- [Stick Fight: The Game – Launch Trailer (PS4)]()  
-- [Super Smash Bros. Brawl – Wii Gameplay 1080p]()  
+
