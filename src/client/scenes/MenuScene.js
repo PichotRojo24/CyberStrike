@@ -11,10 +11,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        // Añadir fondo
-        this.add.image(400, 300, 'background');
-
-        this.add.text(400, 100, 'PONG GAME', {
+        this.add.text(400, 100, 'CYBER STRIKE', {
             fontSize: '64px',
             color: '#ffffff'
         }).setOrigin(0.5);
@@ -32,22 +29,26 @@ export class MenuScene extends Phaser.Scene {
 
         const onlineBtn = this.add.text(400, 390, 'Online Multiplayer', {
             fontSize: '24px',
+            color: '#1ffb02ff',
+        }).setOrigin(0.5);
+
+         const ControlBtn = this.add.text(400, 460, 'Controles', {
+            fontSize: '24px',
             color: '#00ff00',
         }).setOrigin(0.5)
         .setInteractive({useHandCursor: true})
-        .on('pointerover', () => onlineBtn.setColor('#00ff88'))
-        .on('pointerout', () => onlineBtn.setColor('#00ff00'))
+        .on('pointerover', () => localBtn.setColor('#00ff88'))
+        .on('pointerout', () => localBtn.setColor('#00ff00'))
         .on('pointerdown', () => {
-            this.scene.start('LobbyScene');
+            this.scene.start('MenuControles');
         });
 
-        // Indicador de conexión al servidor
+         // Indicador de conexión al servidor
         this.connectionText = this.add.text(400, 500, 'Servidor: Comprobando...', {
             fontSize: '18px',
             color: '#ffff00'
         }).setOrigin(0.5);
-
-        // Listener para cambios de conexión
+         // Listener para cambios de conexión
         this.connectionListener = (data) => {
             this.updateConnectionDisplay(data);
         };
