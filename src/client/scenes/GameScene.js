@@ -3,6 +3,7 @@ import { Paddle } from '../entities/Paddle';
 import { CommandProcessor } from '../commands/CommandProcessor';
 import { MovePaddleCommand } from '../commands/MovePaddleCommand';
 import { PauseGameCommand } from '../commands/PuaseGameCommand';
+import MusicManager from "../services/MusicManager";
 
 export class GameScene extends Phaser.Scene {
 
@@ -10,12 +11,18 @@ export class GameScene extends Phaser.Scene {
         super('GameScene');
     }
 preload() {
-  this.load.image('Robot1', 'assets/Robot1.png');
-  this.load.image('Robot2', 'assets/Robot2.png');
-  this.load.image('Escenario', 'assets/Escenario.jpg');
-  this.load.image('Plataforma', 'assets/Plataforma.png'); 
-  this.load.image('LeftImgScore', 'assets/LeftImgScore.png');   
-  this.load.image('RightOmgScore', 'assets/RightOmgScore.png');     
+  this.load.image('Robot1', 'assets/Jugadores/Robot1.png');
+  this.load.image('Robot2', 'assets/Jugadores/Robot2.png');
+  this.load.image('Escenario', 'assets/Escenarios/Escenario1.jpg');
+  this.load.image('Plataforma', 'assets/Plataformas/Plataforma.png'); 
+  this.load.image('LeftImgScore', 'assets/Marcadores/LeftImgScore.png');   
+  this.load.image('RightOmgScore', 'assets/Marcadores/RightOmgScore.png');
+  this.load.image('PowerUp', 'assets/Power-ups/Boost.png');
+
+  this.load.audio("MusicaJuego", "assets/Musica y Sonido/Musica en combate.mp3");
+  this.load.audio("MusicaBoton", "assets/Musica y Sonido/Flecha Sobre Boton.mp3");
+  this.load.audio("loseMusic", "assets/Musica y Sonido/Seleccion de modo.mp3");
+
 }
 
     init() {
@@ -25,13 +32,20 @@ preload() {
         this.isPaused = false;
         this.escWasDown = false;
         this.processor = new CommandProcessor();
+        this.powerUp = null;
+        this.powerUpTimer = 0;
+        this.playersPower = 
+        {
+        player1: false,
+         player2: false
+        };
     }
 
     create() {
+        MusicManager.play(this, "MusicaJuego", { volume: 0.3 });
   this.add.image(400, 300, 'Escenario')
       .setOrigin(0.5, 0.5)
       .setDisplaySize(800, 600); // ajusta al tamaño de tu juego
-
 
       this.add.image(80, 70, 'LeftImgScore')
       .setOrigin(0.5, 0.5)
@@ -68,12 +82,50 @@ preload() {
           this.physics.add.overlap(this.players.get('player1').sprite, this.outsideMap, this.scoreRightGoal, null, this);
         this.physics.add.overlap(this.players.get('player2').sprite, this.outsideMap, this.scoreLeftGoal, null, this);
 
+
+        this.time.addEvent({
+         delay: 5000,
+        loop: true,
+        callback: () => this.spawnPowerUp()
+        });
+
         this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
 
     }
+    spawnPowerUp() {
+    // Si ya hay uno, no generes otro
+    if (this.powerUp) return;
+
+    const x = Phaser.Math.Between(100, 700);
+    const y = Phaser.Math.Between(200, 500);
+
+    this.powerUp = this.physics.add.sprite(x, y, 'PowerUp');
+    this.powerUp.setScale(0.5);
+    this.powerUp.body.allowGravity = false;
+
+    // Detectar recogida por cada jugador
+    this.players.forEach((paddle, id) => {
+        this.physics.add.overlap(
+            paddle.sprite,
+            this.powerUp,
+            () => this.collectPowerUp(id),
+            null,
+            this
+        );
+    });
+}
+collectPowerUp(playerId) {
+    console.log(playerId + " recogió el power up!");
+
+    this.playersPower[playerId] = true;
+
+    this.powerUp.destroy();
+    this.powerUp = null;
+}
 
       setUpPlayers() {
+        
         const leftPaddle = new Paddle(this, 'player1', 150, 300);
         const rightPaddle = new Paddle(this, 'player2', 600, 300);
 
@@ -84,6 +136,8 @@ preload() {
         const player2 = this.players.get('player2').sprite;
 
 
+        leftPaddle.id = 'player1';
+        rightPaddle.id = 'player2';
         this.physics.add.collider(player1, player2);
 
         const InputConfig = [
@@ -188,8 +242,18 @@ pushOpponent(pusher, target) {
         );
 
         if (distance < 100) {
-            const offsetX = Math.cos(angle) * 35;
-            const offsetY = Math.sin(angle) * 35;
+            let force = 35;
+
+        // Si el jugador tiene power-up, empuja más fuerte
+        if (this.playersPower[pusher.id]) 
+        {
+        force = 100; // fuerza aumentada
+         this.playersPower[pusher.id] = false; // se consume el power-up
+}
+
+const offsetX = Math.cos(angle) * force;
+const offsetY = Math.sin(angle) * force;
+
 
             target.sprite.x += offsetX;
             target.sprite.y += offsetY;

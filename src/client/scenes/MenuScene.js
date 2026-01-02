@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { connectionManager } from '../services/ConnectionManager';
+import MusicManager from "../services/MusicManager";
 
 export class MenuScene extends Phaser.Scene {
     constructor() {
@@ -7,44 +8,65 @@ export class MenuScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('background', 'assets/background.png');
+        this.load.image('FondoPrincipal', 'assets/Pantallas/Menu principal.png');
+        this.load.audio("MusicaMenu", "assets/Musica y Sonido/Menu.mp3");
+        this.load.image('BotonJugar', 'assets/BotonesUI/Local 2 jugadores.png');   
+        this.load.image('BotonControles', 'assets/BotonesUI/Controles.png');
+        this.load.image('BotonMultijugadorEnLinea', 'assets/BotonesUI/Multijugador en linea.png');
+        this.load.audio("click", "assets/Musica y Sonido/Seleccion de modo.mp3");
     }
 
     create() {
-        this.add.text(400, 100, 'CYBER STRIKE', {
-            fontSize: '64px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
+        
+        MusicManager.play(this, "MusicaMenu", { volume: 0.3 });
 
-        const localBtn = this.add.text(400, 320, 'Local 2 Player', {
-            fontSize: '24px',
-            color: '#00ff00',
-        }).setOrigin(0.5)
-        .setInteractive({useHandCursor: true})
-        .on('pointerover', () => localBtn.setColor('#00ff88'))
-        .on('pointerout', () => localBtn.setColor('#00ff00'))
-        .on('pointerdown', () => {
-            this.scene.start('GameScene');
-        });
+        this.add.image(400, 300, 'FondoPrincipal')
+          .setOrigin(0.5, 0.5)
+          .setDisplaySize(800, 600);
 
-        const onlineBtn = this.add.text(400, 390, 'Online Multiplayer', {
-            fontSize: '24px',
-            color: '#1ffb02ff',
-        }).setOrigin(0.5);
+            const centerX = this.cameras.main.width / 2;
+            const baseY = 520;
+            const spacing = 90;
 
-         const ControlBtn = this.add.text(400, 460, 'Controles', {
-            fontSize: '24px',
-            color: '#00ff00',
-        }).setOrigin(0.5)
-        .setInteractive({useHandCursor: true})
-        .on('pointerover', () => localBtn.setColor('#00ff88'))
-        .on('pointerout', () => localBtn.setColor('#00ff00'))
-        .on('pointerdown', () => {
-            this.scene.start('MenuControles');
-        });
+            this.BotonJugar = this.add.image(centerX - 200, baseY + 9, "BotonJugar");
+            this.BotonMultijugadorEnLinea = this.add.image(centerX, baseY + 9, "BotonMultijugadorEnLinea");
+            this.BotonControles = this.add.image(centerX + 200, baseY + 9, "BotonControles");
+
+            this.BotonJugar.setInteractive({ useHandCursor: true });
+              this.BotonJugar.on("pointerdown", () => {
+                this.scene.start("GameScene");
+            });
+
+            this.BotonMultijugadorEnLinea.setInteractive({ useHandCursor: true });
+            this.BotonMultijugadorEnLinea.on("pointerdown", () => {
+            });
+
+            this.BotonControles.setInteractive({ useHandCursor: true });
+            this.BotonControles.on("pointerdown", () => {
+                this.scene.start("MenuControles");
+            });
+
+             const hoverEffect = (btn) => {
+               btn.on("pointerover", () => btn.setScale(1.05));
+               btn.on("pointerout", () => btn.setScale(1));
+             };
+
+             hoverEffect(this.BotonJugar);
+             hoverEffect(this.BotonMultijugadorEnLinea);
+             hoverEffect(this.BotonControles);
+
+             this.BotonJugar.on("pointerdown", () => {
+              this.sound.play("click");
+              this.scene.start("GameScene");
+            });
+
+            this.BotonControles.on("pointerdown", () => {
+              this.sound.play("click");
+              this.scene.start("MenuControles");
+            });
 
          // Indicador de conexión al servidor
-        this.connectionText = this.add.text(400, 500, 'Servidor: Comprobando...', {
+        this.connectionText = this.add.text(400, 580, 'Servidor: Comprobando...', {
             fontSize: '18px',
             color: '#ffff00'
         }).setOrigin(0.5);
@@ -80,4 +102,8 @@ export class MenuScene extends Phaser.Scene {
             connectionManager.removeListener(this.connectionListener);
         }
     }
+}
+
+function create() {
+    throw new Error('Function not implemented.');
 }

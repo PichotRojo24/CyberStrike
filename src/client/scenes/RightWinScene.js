@@ -6,32 +6,50 @@ export class RightWinScene extends Phaser.Scene {
         super('RightWinScene');
     }
 
+        preload() {
+        this.load.image('RightWin', 'assets/Pantallas/Pantalla de victoria Jug2.png');
+        this.load.image('BotonJugarDeNuevo', 'assets/BotonesUI/Jugar de nuevo.png');
+        this.load.image('BotonMenuPrincipal', 'assets/BotonesUI/volver al menu principal.png');
+        }
+
     create() {
-        this.add.text(400, 100, 'Gana el jugador de la Derecha', {
-            fontSize: '34px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
+        this.add.image(400, 300, 'RightWin')
+                .setOrigin(0.5, 0.5)
+                .setDisplaySize(800, 600);
+            
+            const centerX = this.cameras.main.width / 2;
+            const baseY = 520;
+            const spacing = 90;
 
-        const localBtn = this.add.text(400, 320, 'Jugar de nuevo', {
-            fontSize: '24px',
-            color: '#00ff00',
-        }).setOrigin(0.5)
-        .setInteractive({useHandCursor: true})
-        .on('pointerover', () => localBtn.setColor('#00ff88'))
-        .on('pointerout', () => localBtn.setColor('#00ff00'))
-        .on('pointerdown', () => {
-            this.scene.start('GameScene');
-        });
-        const localBtn2 = this.add.text(400, 400, 'Menu Principal', {
-            fontSize: '24px',
-            color: '#00ff00',
-        }).setOrigin(0.5)
-        .setInteractive({useHandCursor: true})
-        .on('pointerover', () => localBtn.setColor('#00ff88'))
-        .on('pointerout', () => localBtn.setColor('#00ff00'))
-        .on('pointerdown', () => {
-            this.scene.start('MenuScene');
-        });
+            this.BotonJugarDeNuevo = this.add.image(centerX - 133, baseY + 9, "BotonJugarDeNuevo");
+            this.BotonMenuPrincipal = this.add.image(centerX + 110, baseY + 9, "BotonMenuPrincipal");
 
+            this.BotonJugarDeNuevo.setInteractive({ useHandCursor: true });
+              this.BotonJugarDeNuevo.on("pointerdown", () => {
+                this.scene.start("GameScene");
+            });
+
+            this.BotonMenuPrincipal.setInteractive({ useHandCursor: true });
+            this.BotonMenuPrincipal.on("pointerdown", () => {
+                this.scene.start("MenuScene");
+            });
+
+             const hoverEffect = (btn) => {
+               btn.on("pointerover", () => btn.setScale(1.05));
+               btn.on("pointerout", () => btn.setScale(1));
+             };
+
+             hoverEffect(this.BotonJugarDeNuevo);
+             hoverEffect(this.BotonMenuPrincipal);
+
+             this.BotonJugarDeNuevo.on("pointerdown", () => {
+              this.sound.play("click");
+              this.scene.start("GameScene");
+            });
+
+            this.BotonMenuPrincipal.on("pointerdown", () => {
+              this.sound.play("click");
+              this.scene.start("MenuScene");
+            });
     }
 }
