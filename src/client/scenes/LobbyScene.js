@@ -7,9 +7,41 @@ export default class LobbyScene extends Phaser.Scene {
     this.ws = null;
   }
 
+      preload() {
+        this.load.image('Lobby', 'assets/Pantallas/Pantalla de Lobby.png');
+        this.load.image('BotonAtras', 'assets/BotonesUI/Atras.png');
+        this.load.audio("click", "assets/Musica y Sonido/Seleccion de modo.mp3");
+        }
+
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+
+      this.add.image(400, 300, 'Lobby')
+        .setOrigin(0.5, 0.5)
+        .setDisplaySize(800, 600);
+
+    const centerX = this.cameras.main.width / 2;
+    const baseY = 520;
+
+    this.BotonAtras = this.add.image(centerX, baseY + 20, "BotonAtras");
+
+    // Interactividad
+    this.BotonAtras.setInteractive({ useHandCursor: true });
+
+    // Hover
+    const hoverEffect = (btn) => {
+      btn.on("pointerover", () => btn.setScale(1.05));
+      btn.on("pointerout", () => btn.setScale(1));
+    };
+
+    hoverEffect(this.BotonAtras);
+
+    // Clicks (UNO SOLO por botón)
+    this.BotonAtras.on("pointerdown", () => {
+      this.sound.play("click");
+      this.scene.start("MenuScene");
+    });
 
     // Title
     this.add.text(width / 2, 100, 'Online Multiplayer', {
@@ -28,27 +60,6 @@ export default class LobbyScene extends Phaser.Scene {
       fontSize: '20px',
       color: '#00ff00'
     }).setOrigin(0.5);
-
-    // Cancel button
-    const cancelButton = this.add.text(width / 2, height - 100, 'Cancel', {
-      fontSize: '24px',
-      color: '#ff6666',
-      backgroundColor: '#333333',
-      padding: { x: 20, y: 10 }
-    }).setOrigin(0.5).setInteractive();
-
-    cancelButton.on('pointerover', () => {
-      cancelButton.setColor('#ff0000');
-    });
-
-    cancelButton.on('pointerout', () => {
-      cancelButton.setColor('#ff6666');
-    });
-
-    cancelButton.on('pointerdown', () => {
-      this.leaveQueue();
-      this.scene.start('MenuScene');
-    });
 
     // Connect to WebSocket server
     this.connectToServer();

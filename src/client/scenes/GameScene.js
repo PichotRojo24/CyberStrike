@@ -11,9 +11,10 @@ export class GameScene extends Phaser.Scene {
         super('GameScene');
     }
 preload() {
+
   this.load.image('Robot1', 'assets/Jugadores/Robot1.png');
   this.load.image('Robot2', 'assets/Jugadores/Robot2.png');
-  this.load.image('Escenario', 'assets/Escenarios/Escenario1.jpg');
+  this.load.image('Escenario', 'assets/Escenarios/Escenario1.png');
   this.load.image('Plataforma', 'assets/Plataformas/Plataforma.png'); 
   this.load.image('LeftImgScore', 'assets/Marcadores/LeftImgScore.png');   
   this.load.image('RightOmgScore', 'assets/Marcadores/RightOmgScore.png');
@@ -43,7 +44,7 @@ preload() {
 
     create() {
         MusicManager.play(this, "MusicaJuego", { volume: 0.3 });
-  this.add.image(400, 300, 'Escenario')
+      this.add.image(400, 300, 'Escenario')
       .setOrigin(0.5, 0.5)
       .setDisplaySize(800, 600); // ajusta al tamaño de tu juego
 
@@ -54,11 +55,7 @@ preload() {
       this.add.image(720, 65, 'RightOmgScore')
       .setOrigin(0.5, 0.5)
       .setDisplaySize(150, 100); // ajusta al tamaño de tu juego
-
-        // Línea discontinua central
-        for (let i = 0; i < 12; i++) {
-            this.add.rectangle(400, i * 50 + 25, 10, 30, 0x444444);
-        }
+      
         // Marcadores
         this.scoreLeft = this.add.text(100, 50, '0', {
             fontSize: '48px',
