@@ -11,7 +11,21 @@ export class MultiplayerGameScene extends Phaser.Scene {
     constructor() {
         super('MultiplayerGameScene');
     }
+preload() {
 
+  this.load.image('Robot1', 'assets/Jugadores/Robot1.png');
+  this.load.image('Robot2', 'assets/Jugadores/Robot2.png');
+  this.load.image('Escenario', 'assets/Escenarios/Escenario1.png');
+  this.load.image('Plataforma', 'assets/Plataformas/Plataforma.png'); 
+  this.load.image('LeftImgScore', 'assets/Marcadores/LeftImgScore.png');   
+  this.load.image('RightOmgScore', 'assets/Marcadores/RightOmgScore.png');
+  this.load.image('PowerUp', 'assets/Power-ups/Boost.png');
+
+  this.load.audio("MusicaJuego", "assets/Musica y Sonido/Musica en combate.mp3");
+  this.load.audio("MusicaBoton", "assets/Musica y Sonido/Flecha Sobre Boton.mp3");
+  this.load.audio("loseMusic", "assets/Musica y Sonido/Seleccion de modo.mp3");
+
+}
     init(data) {
         this.ws = data.ws;
         this.playerRole = data.playerRole; // 'player1' or 'player2'
@@ -27,12 +41,18 @@ export class MultiplayerGameScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.rectangle(400, 300, 800, 600, 0x1a1a2e);
+      this.add.image(400, 300, 'Escenario')
+      .setOrigin(0.5, 0.5)
+      .setDisplaySize(800, 600); // ajusta al tamaño de tu juego
 
-        // Center discontinued line
-        for (let i = 0; i < 12; i++) {
-            this.add.rectangle(400, i * 50 + 25, 10, 30, 0x444444);
-        }
+      this.add.image(80, 70, 'LeftImgScore')
+      .setOrigin(0.5, 0.5)
+      .setDisplaySize(150, 100); // ajusta al tamaño de tu juego
+
+      this.add.image(720, 65, 'RightOmgScore')
+      .setOrigin(0.5, 0.5)
+      .setDisplaySize(150, 100); // ajusta al tamaño de tu juego
+      
 
         // Score texts
         this.scoreLeft = this.add.text(100, 50, '0', {
@@ -55,6 +75,7 @@ export class MultiplayerGameScene extends Phaser.Scene {
         this.createBounds();
         this.createBall();
         this.setUpPlayers();
+             this.createFloor();
 
         // Add colliders
         this.physics.add.collider(this.ball, this.localPaddle.sprite);
@@ -75,14 +96,34 @@ export class MultiplayerGameScene extends Phaser.Scene {
     setUpPlayers() {
         // Create paddles based on player role
         if (this.playerRole === 'player1') {
-            this.localPaddle = new Paddle(this, 'player1', 50, 300);
-            this.remotePaddle = new Paddle(this, 'player2', 750, 300);
+            this.localPaddle = new Paddle(this, 'player1', 150, 300);
+            this.remotePaddle = new Paddle(this, 'player2', 650, 300);
+              this.localPaddle.sprite.body.allowGravity = true;
         } else {
-            this.localPaddle = new Paddle(this, 'player2', 750, 300);
-            this.remotePaddle = new Paddle(this, 'player1', 50, 300);
+            this.localPaddle = new Paddle(this, 'player2', 650, 300);
+            this.remotePaddle = new Paddle(this, 'player1', 150, 300);
+    this.localPaddle.sprite.body.allowGravity = true;
         }
     }
+createFloor() {
 
+    this.add.image(400, 300, 'Plataforma')
+      .setOrigin(0.5, -1.95)
+      .setDisplaySize(525, 100);
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0x00ff00);
+        graphics.fillRect(0, 0, 500, 100);
+        graphics.generateTexture('floor', 500, 300);
+        graphics.destroy();
+
+        this.floor = this.physics.add.sprite(400, 650, 'floor');
+        this.floor.setDisplaySize(500, 300);
+        this.floor.body.setSize(500, 300);
+        this.floor.setImmovable(true);
+        this.floor.setVisible(false);
+        this.floor.body.allowGravity = false;
+        this.physics.add.collider(this.floor, this.localPaddle.sprite);
+    }
     setupWebSocketListeners() {
         this.ws.onmessage = (event) => {
             try {
@@ -111,8 +152,15 @@ export class MultiplayerGameScene extends Phaser.Scene {
     handleServerMessage(data) {
         switch (data.type) {
             case 'paddleUpdate':
+                console.log("CLIENT RECEIVED:", data);
                 // Update opponent's paddle position
                 this.remotePaddle.sprite.y = data.y;
+                if (data.player !== this.playerRole) {
+    this.remotePaddle.sprite.x = data.x;
+}
+
+                console.log("X position of opponent paddle: " + data.x);
+                console.log("Y position of opponent paddle: " + data.y);
                 break;
 
             case 'scoreUpdate':
@@ -252,31 +300,42 @@ export class MultiplayerGameScene extends Phaser.Scene {
 
     update() {
         if (this.gameEnded) return;
+if (!this.localPaddle || !this.remotePaddle) {
+        return; // ⛑️ No enviar nada hasta que existan
+    }
 
         // Handle local paddle input - both players use arrow keys
         let direction = null;
         if (this.cursors.up.isDown) {
+            
             direction = 'up';
-        } else if (this.cursors.down.isDown) {
-            direction = 'down';
+        }
+         else if (this.cursors.right.isDown) {
+            direction = 'right';
+        } else if (this.cursors.left.isDown) {
+            direction = 'left';
         } else {
             direction = 'stop';
         }
 
         // Move local paddle
         const speed = 300;
-        if (direction === 'up') {
-            this.localPaddle.sprite.setVelocityY(-speed);
-        } else if (direction === 'down') {
-            this.localPaddle.sprite.setVelocityY(speed);
-        } else {
-            this.localPaddle.sprite.setVelocityY(0);
+        if (direction === 'up' && this.localPaddle.sprite.body.touching.down) {
+            this.localPaddle.sprite.setVelocityY(-1500);
+        }       
+        else if (direction === 'right') {
+            this.localPaddle.sprite.setVelocityX(speed);
+        } else if (direction === 'left') {
+            this.localPaddle.sprite.setVelocityX(-speed);
+        } 
+        else {
+            this.localPaddle.sprite.setVelocityX(0);
         }
-
         // Send paddle position to server
         this.sendMessage({
             type: 'paddleMove',
-            y: this.localPaddle.sprite.y
+            x: this.localPaddle.sprite.x,
+            y: this.localPaddle.sprite.y,
         });
     }
 
