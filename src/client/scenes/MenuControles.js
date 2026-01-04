@@ -37,7 +37,7 @@ export class MenuControles extends Phaser.Scene {
     // Clicks (UNO SOLO por botón)
     this.BotonAtras.on("pointerdown", () => {
       this.sound.play("click");
-      this.scene.start("MenuScene");
+      this.scene.start("MenuOpciones");
     });
 
     }

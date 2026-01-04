@@ -1,6 +1,3 @@
-/**
- * Lobby Scene - Waiting for multiplayer matchmaking
- */
 export default class LobbyScene extends Phaser.Scene {
   constructor() {
     super({ key: 'LobbyScene' });
@@ -44,10 +41,12 @@ export default class LobbyScene extends Phaser.Scene {
     });
 
     // Title
-    this.add.text(width / 2, 100, 'Online Multiplayer', {
-      fontSize: '48px',
-      color: '#ffffff'
-    }).setOrigin(0.5);
+    this.add.text(410, 100, "ONLINE MULTIPLAYER", {
+        fontFamily: "Orbitron",
+        fontSize: "48px",
+        color: "#eaeaea",
+        letterSpacing: 4
+      }).setOrigin(0.5);
 
     // Status text
     this.statusText = this.add.text(width / 2, height / 2 - 50, 'Connecting to server...', {

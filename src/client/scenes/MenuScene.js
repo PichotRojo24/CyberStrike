@@ -14,7 +14,7 @@ export class MenuScene extends Phaser.Scene {
     this.load.audio("click", "assets/Musica y Sonido/Seleccion de modo.mp3");
 
     this.load.image('BotonJugar', 'assets/BotonesUI/Local 2 jugadores.png');
-    this.load.image('BotonControles', 'assets/BotonesUI/Controles.png');
+    this.load.image('BotonOpciones', 'assets/BotonesUI/Opciones.png');
     this.load.image('BotonMultijugadorEnLinea', 'assets/BotonesUI/Multijugador en linea.png');
   }
 
@@ -32,12 +32,12 @@ export class MenuScene extends Phaser.Scene {
     // Botones
     this.BotonJugar = this.add.image(centerX - 200, baseY + 9, "BotonJugar");
     this.BotonMultijugadorEnLinea = this.add.image(centerX, baseY + 9, "BotonMultijugadorEnLinea");
-    this.BotonControles = this.add.image(centerX + 200, baseY + 9, "BotonControles");
+    this.BotonOpciones = this.add.image(centerX + 200, baseY + 9, "BotonOpciones");
 
     // Interactividad
     this.BotonJugar.setInteractive({ useHandCursor: true });
     this.BotonMultijugadorEnLinea.setInteractive({ useHandCursor: true });
-    this.BotonControles.setInteractive({ useHandCursor: true });
+    this.BotonOpciones.setInteractive({ useHandCursor: true });
 
     // Hover
     const hoverEffect = (btn) => {
@@ -47,7 +47,7 @@ export class MenuScene extends Phaser.Scene {
 
     hoverEffect(this.BotonJugar);
     hoverEffect(this.BotonMultijugadorEnLinea);
-    hoverEffect(this.BotonControles);
+    hoverEffect(this.BotonOpciones);
 
     // Clicks (UNO SOLO por botón)
     this.BotonJugar.on("pointerdown", () => {
@@ -55,9 +55,9 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start("GameScene");
     });
 
-    this.BotonControles.on("pointerdown", () => {
+    this.BotonOpciones.on("pointerdown", () => {
       this.sound.play("click");
-      this.scene.start("MenuControles");
+      this.scene.start("MenuOpciones");
     });
 
     this.BotonMultijugadorEnLinea.on("pointerdown", () => {

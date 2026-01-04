@@ -3,11 +3,14 @@ import { MenuScene } from './scenes/MenuScene.js';
 import {MenuControles} from './scenes/MenuControles.js';   
 import { GameScene } from './scenes/GameScene.js';
 import { PauseScene } from './scenes/PauseScene.js';
+import { MenuOpciones } from './scenes/MenuOpciones.js';
 import { ConnectionLostScene } from './scenes/ConnectionLostScene.js';
 import LobbyScene from './scenes/LobbyScene.js';
 import { MultiplayerGameScene } from './scenes/MultiplayerGameScene.js';
 import { LeftWinScene } from './scenes/LeftWinScene.js';
 import { RightWinScene } from './scenes/RightWinScene.js';
+let savedVolume = localStorage.getItem("musicVolume");
+let musicVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.5;
 
 const config = {
     type: Phaser.AUTO,
@@ -21,7 +24,7 @@ const config = {
             debug: false
         }
     },
-    scene: [MenuScene,MenuControles, GameScene, PauseScene, ConnectionLostScene, LobbyScene, MultiplayerGameScene, LeftWinScene, RightWinScene],
+    scene: [MenuScene,MenuControles, GameScene, PauseScene, MenuOpciones, ConnectionLostScene, LobbyScene, MultiplayerGameScene, LeftWinScene, RightWinScene],
     backgroundColor: '#1a1a2e',
 }
 
