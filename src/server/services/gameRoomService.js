@@ -11,38 +11,43 @@ export function createGameRoomService() {
    * @param {WebSocket} player2Ws - Player 2's WebSocket
    * @returns {string} Room ID
    */
-  function createRoom(player1Ws, player2Ws) {
+function createRoom(player1Ws, player2Ws) {
     const roomId = `room_${nextRoomId++}`;
 
     const room = {
       id: roomId,
-      player1: {
-        ws: player1Ws,
-        score: 0
-      },
-      player2: {
-        ws: player2Ws,
-        score: 0
-      },
+      player1: { ws: player1Ws, score: 0 },
+      player2: { ws: player2Ws, score: 0 },
       active: true,
-      ballActive: true // Track if ball is in play (prevents duplicate goals)
+      ballActive: true
     };
 
     rooms.set(roomId, room);
 
-    // Store room ID on WebSocket for quick lookup
     player1Ws.roomId = roomId;
     player2Ws.roomId = roomId;
 
+    // 🔥 ASIGNAR ROLES
+    player1Ws.role = 'player1';
+    player2Ws.role = 'player2';
+
+    // 🔥 ENVIAR ROLES AL CLIENTE
+    player1Ws.send(JSON.stringify({ type: 'role', role: 'player1' }));
+    player2Ws.send(JSON.stringify({ type: 'role', role: 'player2' }));
+
     return roomId;
-  }
+}
+
+
 
   /**
    * Handle paddle movement from a player
    * @param {WebSocket} ws - Player's WebSocket
+   * @param {number} x - Paddle X position
    * @param {number} y - Paddle Y position
    */
-  function handlePaddleMove(ws, y) {
+  function handlePaddleMove(ws,x, y) {
+    console.log("SERVER RECEIVED:", x, y);
     const roomId = ws.roomId;
     if (!roomId) return;
 
@@ -54,9 +59,12 @@ export function createGameRoomService() {
 
     if (opponent.readyState === 1) { // WebSocket.OPEN
       opponent.send(JSON.stringify({
-        type: 'paddleUpdate',
-        y
-      }));
+    type: 'paddleUpdate',
+    y:y,
+    x: x,
+    player: ws.role   
+}));
+
     }
   }
 

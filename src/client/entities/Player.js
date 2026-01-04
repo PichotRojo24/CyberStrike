@@ -8,6 +8,7 @@ export class Player {
     this.sprite.setImmovable(false);
     this.sprite.setCollideWorldBounds(true);
     this.sprite.body.allowGravity = true;
+    
 
   } 
 }
