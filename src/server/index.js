@@ -138,8 +138,12 @@ wss.on('connection', (ws) => {
           gameRoomService.handlePaddleMove(ws, data.x, data.y);
           break;
 
-        case 'goal':
-          gameRoomService.handleGoal(ws, data.side);
+        case 'playerFell':
+          gameRoomService.handlePlayerFell(ws, data.player);
+          break;
+
+        case 'push':
+          gameRoomService.handlePush(ws, data);
           break;
 
         default:

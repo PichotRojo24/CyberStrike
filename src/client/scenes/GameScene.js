@@ -10,6 +10,7 @@ export class GameScene extends Phaser.Scene {
  constructor() {
         super('GameScene');
     }
+    
 preload() {
 
   this.load.image('Robot1', 'assets/Jugadores/Robot1.png');
@@ -171,7 +172,7 @@ collectPowerUp(playerId) {
         
         const currentScore = parseInt(this.scoreLeft.text);
         this.scoreLeft.setText((currentScore + 1).toString());
-        if(currentScore == 2 ){
+        if(currentScore == 3 ){
             this.scene.start('LeftWinScene');
         }
 
@@ -182,7 +183,7 @@ collectPowerUp(playerId) {
         this.resetPlayer();
         const currentScore = parseInt(this.rightScore.text);
         this.rightScore.setText((currentScore + 1).toString());
-               if(currentScore == 2 ){
+               if(currentScore == 3 ){
             this.scene.start('RightWinScene');
         }
     }
@@ -257,31 +258,6 @@ const offsetY = Math.sin(angle) * force;
         }
     }
 
-    endGame(winnerId) {
-
-        this.physics.pause();
-
-        const winnerText = winnerId === 'player1' ? 'Player 1 Wins!' : 'Player 2 Wins!';
-        this.add.text(400, 250, winnerText, {
-            fontSize: '64px',
-            color: '#00ff00'
-        }).setOrigin(0.5);
-
-        const menuBtn = this.add.text(400, 350, 'Return to Main Menu', {
-            fontSize: '32px',
-            color: '#ffffff',
-        }).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerover', () => menuBtn.setColor('#cccccc'))
-        .on('pointerout', () => menuBtn.setColor('#ffffff'))
-        .on('pointerdown', () => {
-            this.scene.start('MenuScene');
-        });
-    }
-
-
-
-
     setPauseState(isPaused) {
         this.isPaused = isPaused;
         if (isPaused) {
@@ -305,6 +281,11 @@ const offsetY = Math.sin(angle) * force;
         // --- Lógica de jugadores ---
         this.inputMappings.forEach(mapping => {
             const paddle = this.players.get(mapping.playerId);
+
+            // Si está siendo empujado, no procesar input de movimiento horizontal
+            if (paddle.isKnockedBack) {
+                return;
+            }
 
             if (mapping.LeftKeyObj.isDown) {
     paddle.sprite.setVelocityX(-paddle.baseSpeed);
@@ -333,7 +314,10 @@ const offsetY = Math.sin(angle) * force;
             if (mapping.ActionKeyObj.isUp) {
                 paddle.boolCanPush = true;
             }
+
+            const body = paddle.sprite.body;
         });
+        
 
         // --- Pausa con ESC ---
         if (Phaser.Input.Keyboard.JustDown(this.escKey)) {

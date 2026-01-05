@@ -7,6 +7,10 @@ import { MenuOpciones } from './scenes/MenuOpciones.js';
 import { ConnectionLostScene } from './scenes/ConnectionLostScene.js';
 import LobbyScene from './scenes/LobbyScene.js';
 import { MultiplayerGameScene } from './scenes/MultiplayerGameScene.js';
+import { LeftWinSceneMultiplayer } from './scenes/LeftWinSceneMultiplayer.js';
+import { RightWinSceneMultiplayer } from './scenes/RightWinSceneMultiplayer.js';
+import { LeftLoseSceneMultiplayer } from './scenes/LeftLoseSceneMultiplayer.js';
+import { RightLoseSceneMultiplayer } from './scenes/RightLoseSceneMultiplayer.js';
 import { LeftWinScene } from './scenes/LeftWinScene.js';
 import { RightWinScene } from './scenes/RightWinScene.js';
 let savedVolume = localStorage.getItem("musicVolume");
@@ -24,7 +28,7 @@ const config = {
             debug: false
         }
     },
-    scene: [MenuScene,MenuControles, GameScene, PauseScene, MenuOpciones, ConnectionLostScene, LobbyScene, MultiplayerGameScene, LeftWinScene, RightWinScene],
+    scene: [MenuScene,MenuControles, GameScene, PauseScene, MenuOpciones, ConnectionLostScene, LobbyScene, MultiplayerGameScene, LeftWinSceneMultiplayer, RightWinSceneMultiplayer, LeftLoseSceneMultiplayer, RightLoseSceneMultiplayer, LeftWinScene, RightWinScene],
     backgroundColor: '#1a1a2e',
 }
 

@@ -66,6 +66,9 @@ export default class LobbyScene extends Phaser.Scene {
 
   connectToServer() {
     try {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.close();
+      }
       // Connect to WebSocket server (same host as web server)
       const wsUrl = `ws://localhost:3000`;
 

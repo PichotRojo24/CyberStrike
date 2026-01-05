@@ -12,7 +12,7 @@ export class PauseScene extends Phaser.Scene {
         }
 
   create(data) {
-    // ✅ fallback por si no te mandaron originalScene
+
     const originalSceneKey = data?.originalScene || 'GameScene';
 
     this.add.image(400, 300, 'Pausa')
@@ -45,7 +45,6 @@ export class PauseScene extends Phaser.Scene {
     hoverEffect(this.BotonResume);
     hoverEffect(this.BotonVolverAlMenu);
 
-    // Clicks (UNO SOLO por botón)
     this.BotonResume.on("pointerdown", () => {
       this.sound.play("click");
       this.scene.stop('PauseScene');

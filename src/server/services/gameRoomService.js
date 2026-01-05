@@ -19,7 +19,7 @@ function createRoom(player1Ws, player2Ws) {
       player1: { ws: player1Ws, score: 0 },
       player2: { ws: player2Ws, score: 0 },
       active: true,
-      ballActive: true
+      roundActive: true
     };
 
     rooms.set(roomId, room);
@@ -27,18 +27,16 @@ function createRoom(player1Ws, player2Ws) {
     player1Ws.roomId = roomId;
     player2Ws.roomId = roomId;
 
-    // 🔥 ASIGNAR ROLES
+    // ASIGNAR ROLES
     player1Ws.role = 'player1';
     player2Ws.role = 'player2';
 
-    // 🔥 ENVIAR ROLES AL CLIENTE
+    // ENVIAR ROLES AL CLIENTE
     player1Ws.send(JSON.stringify({ type: 'role', role: 'player1' }));
     player2Ws.send(JSON.stringify({ type: 'role', role: 'player2' }));
 
     return roomId;
 }
-
-
 
   /**
    * Handle paddle movement from a player
@@ -69,30 +67,28 @@ function createRoom(player1Ws, player2Ws) {
   }
 
   /**
-   * Handle goal event from a player
+   * Handle player fell event
    * @param {WebSocket} ws - Player's WebSocket
-   * @param {string} side - Which side scored ('left' or 'right')
+   * @param {string} fallenPlayerRole - Which player fell ('player1' or 'player2')
    */
-  function handleGoal(ws, side) {
+  function handlePlayerFell(ws, fallenPlayerRole) {
     const roomId = ws.roomId;
     if (!roomId) return;
 
     const room = rooms.get(roomId);
     if (!room || !room.active) return;
 
-    // Prevent duplicate goal detection (both clients send goal event)
-    // Only process goal if ball is active
-    if (!room.ballActive) {
-      return; // Ball not in play, ignore goal
+    // Prevent duplicate score detection
+    if (!room.roundActive) {
+      return; 
     }
-    room.ballActive = false; // Mark ball as inactive until relaunched
+    room.roundActive = false; 
 
     // Update scores
-    // When ball hits LEFT goal (x=0), player2 scores (player1 missed)
-    // When ball hits RIGHT goal (x=800), player1 scores (player2 missed)
-    if (side === 'left') {
+    // If player1 fell, player2 scores. If player2 fell, player1 scores.
+    if (fallenPlayerRole === 'player1') {
       room.player2.score++;
-    } else if (side === 'right') {
+    } else if (fallenPlayerRole === 'player2') {
       room.player1.score++;
     }
 
@@ -123,32 +119,36 @@ function createRoom(player1Ws, player2Ws) {
       // Mark room as inactive
       room.active = false;
     } else {
-      // Relaunch ball after 1 second delay
+      // Start next round after delay
       setTimeout(() => {
         if (room.active) {
-          // Generate new ball direction
-          const angle = (Math.random() * 60 - 30) * (Math.PI / 180); // -30 to 30 degrees
-          const speed = 300;
-          const ballData = {
-            x: 400,
-            y: 300,
-            vx: speed * Math.cos(angle),
-            vy: speed * Math.sin(angle)
-          };
-
-          // Send ball relaunch to both players
-          const relaunchMsg = {
-            type: 'ballRelaunch',
-            ball: ballData
-          };
-
-          room.player1.ws.send(JSON.stringify(relaunchMsg));
-          room.player2.ws.send(JSON.stringify(relaunchMsg));
-
-          // Mark ball as active again
-          room.ballActive = true;
+          room.roundActive = true;
+          // No need to send ballRelaunch, clients handle reset on scoreUpdate or just continue
         }
       }, 1000);
+    }
+  }
+
+  /**
+   * Handle push event (relay to opponent)
+   * @param {WebSocket} ws - Pusher's WebSocket
+   * @param {Object} data - Push data (angle, force)
+   */
+  function handlePush(ws, data) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+
+    const opponent = room.player1.ws === ws ? room.player2.ws : room.player1.ws;
+
+    if (opponent.readyState === 1) {
+        opponent.send(JSON.stringify({
+            type: 'push',
+            angle: data.angle,
+            force: data.force
+        }));
     }
   }
 
@@ -191,7 +191,8 @@ function createRoom(player1Ws, player2Ws) {
   return {
     createRoom,
     handlePaddleMove,
-    handleGoal,
+    handlePlayerFell,
+    handlePush,
     handleDisconnect,
     getActiveRoomCount
   };

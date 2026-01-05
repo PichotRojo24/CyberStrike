@@ -16,10 +16,8 @@ export class Paddle {
 
     this.sprite.setImmovable(false);
     this.sprite.setCollideWorldBounds(true);
-    this.sprite.body.allowGravity = false;
+    this.sprite.setScale(0.1);
 
-     this.sprite.setScale(0.1);
-     
-
+    this.isKnockedBack = false;
   }
 }

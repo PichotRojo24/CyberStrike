@@ -1,11 +1,9 @@
 import Phaser from 'phaser';
 import { Paddle } from '../entities/Paddle';
+import { CommandProcessor } from '../commands/CommandProcessor';
+import { PauseGameCommand } from '../commands/PuaseGameCommand';
 
-/**
- * Multiplayer Game Scene - Online pong game
- * Ball physics run on both clients (deterministic)
- * Server only tracks scores and relays paddle positions
- */
+
 export class MultiplayerGameScene extends Phaser.Scene {
 
     constructor() {
@@ -33,6 +31,7 @@ preload() {
         this.initialBall = data.initialBall;
         this.ball = null;
         this.isPaused = false;
+        this.processor = new CommandProcessor();
         this.gameEnded = false;
         this.localPaddle = null;
         this.remotePaddle = null;
@@ -60,7 +59,7 @@ preload() {
             color: '#00ff00'
         });
 
-        this.scoreRight = this.add.text(700, 50, '0', {
+        this.scoreRight = this.add.text(670, 50, '0', {
             fontSize: '48px',
             color: '#00ff00'
         });
@@ -73,24 +72,40 @@ preload() {
         }).setOrigin(0.5);
 
         this.createBounds();
-        this.createBall();
+        // this.createBall(); // Removed ball
         this.setUpPlayers();
              this.createFloor();
 
         // Add colliders
-        this.physics.add.collider(this.ball, this.localPaddle.sprite);
-        this.physics.add.collider(this.ball, this.remotePaddle.sprite);
-        this.physics.add.overlap(this.ball, this.leftGoal, this.scoreLeftGoal, null, this);
-        this.physics.add.overlap(this.ball, this.rightGoal, this.scoreRightGoal, null, this);
+        // this.physics.add.collider(this.localPaddle.sprite, this.remotePaddle.sprite);
+        
+        // Detect falling off map
+        this.physics.add.overlap(this.localPaddle.sprite, this.outsideMap, this.handlePlayerFall, null, this);
 
         // Set up WebSocket listeners
         this.setupWebSocketListeners();
 
-        // Set up input - both players use arrow keys
-        this.cursors = this.input.keyboard.createCursorKeys();
+        // Set up input
+        this.cursors = this.input.keyboard.createCursorKeys(); // Arrows
+        this.wasd = this.input.keyboard.addKeys({
+            up: Phaser.Input.Keyboard.KeyCodes.W,
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            down: Phaser.Input.Keyboard.KeyCodes.S,
+            right: Phaser.Input.Keyboard.KeyCodes.D
+        });
 
-        // Launch ball with server-provided initial state
-        this.ball.setVelocity(this.initialBall.vx, this.initialBall.vy);
+        // Push keys (Space, E, M)
+        this.pushKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+        this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+        this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        
+        this.canPush = true;
+
+        // Add collider with callback for physical pushing
+        this.physics.add.collider(this.localPaddle.sprite, this.remotePaddle.sprite, this.handlePaddleCollision, null, this);
+        
+        // Detect falling off map
     }
 
     setUpPlayers() {
@@ -98,11 +113,23 @@ preload() {
         if (this.playerRole === 'player1') {
             this.localPaddle = new Paddle(this, 'player1', 150, 300);
             this.remotePaddle = new Paddle(this, 'player2', 650, 300);
-              this.localPaddle.sprite.body.allowGravity = true;
+            
+            this.localPaddle.sprite.body.allowGravity = true;
+            
+            // Remote paddle should not be affected by local physics
+            this.remotePaddle.sprite.body.allowGravity = false;
+            this.remotePaddle.sprite.setImmovable(true);
+            this.remotePaddle.sprite.setVelocity(0, 0);
         } else {
             this.localPaddle = new Paddle(this, 'player2', 650, 300);
             this.remotePaddle = new Paddle(this, 'player1', 150, 300);
-    this.localPaddle.sprite.body.allowGravity = true;
+            
+            this.localPaddle.sprite.body.allowGravity = true;
+            
+            // Remote paddle should not be affected by local physics
+            this.remotePaddle.sprite.body.allowGravity = false;
+            this.remotePaddle.sprite.setImmovable(true);
+            this.remotePaddle.sprite.setVelocity(0, 0);
         }
     }
 createFloor() {
@@ -171,15 +198,16 @@ createFloor() {
                 this.scoreLeft.setText(data.player1Score.toString());
                 this.scoreRight.setText(data.player2Score.toString());
 
-                // Stop ball, server will relaunch it
-                this.ball.setVelocity(0, 0);
-                this.ball.setPosition(400, 300);
+                // Reset players
+                this.resetPlayers();
                 break;
 
             case 'ballRelaunch':
-                // Server is relaunching the ball with new velocity
-                this.ball.setPosition(data.ball.x, data.ball.y);
-                this.ball.setVelocity(data.ball.vx, data.ball.vy);
+                // Removed ball relaunch
+                break;
+            
+            case 'push':
+                this.handlePush(data);
                 break;
 
             case 'gameOver':
@@ -195,23 +223,8 @@ createFloor() {
         }
     }
 
-    scoreLeftGoal() {
-        if (this.gameEnded) return;
-
-        // Ball hit LEFT goal (x=0), so notify server
-        this.sendMessage({ type: 'goal', side: 'left' });
-    }
-
-    scoreRightGoal() {
-        if (this.gameEnded) return;
-
-        // Ball hit RIGHT goal (x=800), so notify server
-        this.sendMessage({ type: 'goal', side: 'right' });
-    }
-
     endGame(winner, player1Score, player2Score) {
         this.gameEnded = true;
-        this.ball.setVelocity(0, 0);
         this.localPaddle.sprite.setVelocity(0, 0);
         this.remotePaddle.sprite.setVelocity(0, 0);
         this.physics.pause();
@@ -219,25 +232,117 @@ createFloor() {
         const isWinner = (winner === 'player1' && this.playerRole === 'player1') ||
                         (winner === 'player2' && this.playerRole === 'player2');
 
-        const winnerText = isWinner ? 'You Win!' : 'You Lose!';
-        const color = isWinner ? '#00ff00' : '#ff0000';
+        // Cerrar conexión WebSocket
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.close();
+        }
 
-        this.add.text(400, 200, winnerText, {
-            fontSize: '64px',
-            color: color
-        }).setOrigin(0.5);
+        // Ir a la escena de victoria/derrota correspondiente
+        if (isWinner) {
+            if (this.playerRole === 'player1') {
+                this.scene.start('LeftWinSceneMultiplayer');
+            } else {
+                this.scene.start('RightWinSceneMultiplayer');
+            }
+        } else {
+            if (this.playerRole === 'player1') {
+                this.scene.start('LeftLoseSceneMultiplayer');
+            } else {
+                this.scene.start('RightLoseSceneMultiplayer');
+            }
+        }
+    }
 
-        this.add.text(400, 280, `Final Score: ${player1Score} - ${player2Score}`, {
-            fontSize: '32px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
 
-        this.createMenuButton();
+            setPauseState(isPaused) {
+            this.isPaused = isPaused;
+            if (isPaused) {
+                this.scene.launch('PauseScene', { originalScene: 'GameScene' });
+                this.scene.pause();
+            } 
+        }
+    
+        resume() {
+            this.isPaused = false;
+        }
+    
+        togglePause() {
+            const newPauseState = !this.isPaused;
+            this.processor.process(
+                new PauseGameCommand(this, newPauseState)
+            );
+        }
+
+    handlePaddleCollision(localPlayer, remotePlayer) {
+        // Only trigger if we are moving
+        if (localPlayer.body.velocity.x !== 0) {
+             const angle = Phaser.Math.Angle.Between(
+                localPlayer.x,
+                localPlayer.y,
+                remotePlayer.x,
+                remotePlayer.y
+            );
+            
+            const now = this.time.now;
+            if (!this.lastBodyPush || now - this.lastBodyPush > 200) {
+                this.lastBodyPush = now;
+                this.sendMessage({
+                    type: 'push',
+                    angle: angle,
+                    force: 20 
+                });
+            }
+        }
+    }
+
+    handlePush(data) {
+        // I was pushed!
+        const force = data.force;
+        const angle = data.angle;
+        const velocityMagnitude = force * 8; 
+
+        // Apply velocity to local paddle (since I am the one being pushed)
+        this.localPaddle.sprite.setVelocity(
+            Math.cos(angle) * velocityMagnitude,
+            Math.sin(angle) * velocityMagnitude
+        );
+        
+        this.localPaddle.isKnockedBack = true;
+        this.time.delayedCall(300, () => {
+            if (this.localPaddle) this.localPaddle.isKnockedBack = false;
+        });
+    }
+
+    attemptPush() {
+        // Check distance to remote paddle
+        const distance = Phaser.Math.Distance.Between(
+            this.localPaddle.sprite.x,
+            this.localPaddle.sprite.y,
+            this.remotePaddle.sprite.x,
+            this.remotePaddle.sprite.y
+        );
+
+        if (distance < 100) {
+            // Calculate angle from ME to HIM
+            const angle = Phaser.Math.Angle.Between(
+                this.localPaddle.sprite.x,
+                this.localPaddle.sprite.y,
+                this.remotePaddle.sprite.x,
+                this.remotePaddle.sprite.y
+            );
+            
+            // Send push event to server
+            this.sendMessage({
+                type: 'push',
+                angle: angle,
+                force: 35 // Base force
+            });
+        }
     }
 
     handleDisconnection() {
         this.gameEnded = true;
-        this.ball.setVelocity(0, 0);
+        // this.ball.setVelocity(0, 0); // Removed ball
         this.localPaddle.sprite.setVelocity(0, 0);
         this.remotePaddle.sprite.setVelocity(0, 0);
         this.physics.pause();
@@ -266,30 +371,42 @@ createFloor() {
         });
     }
 
-    createBall() {
-        const graphics = this.add.graphics();
-        graphics.fillStyle(0xffffff);
-        graphics.fillCircle(8, 8, 8);
-        graphics.generateTexture('ball-multi', 16, 16);
-        graphics.destroy();
-
-        this.ball = this.physics.add.sprite(400, 300, 'ball-multi');
-        this.ball.setCollideWorldBounds(true);
-        this.ball.setBounce(1);
+    createBounds() {
+        // Create falling zone at the bottom
+        this.outsideMap = this.physics.add.sprite(400, 600, null);
+        this.outsideMap.setDisplaySize(800, 25);
+        this.outsideMap.body.setSize(800, 25);
+        this.outsideMap.setImmovable(true);
+        this.outsideMap.setVisible(false);
+        this.outsideMap.body.allowGravity = false;
     }
 
-    createBounds() {
-        this.leftGoal = this.physics.add.sprite(0, 300, null);
-        this.leftGoal.setDisplaySize(10, 600);
-        this.leftGoal.body.setSize(10, 600);
-        this.leftGoal.setImmovable(true);
-        this.leftGoal.setVisible(false);
+    handlePlayerFall() {
+        if (this.gameEnded) return;
+        
+        // Notify server that I fell
+        this.sendMessage({ type: 'playerFell', player: this.playerRole });
+        
+        // Disable physics temporarily to prevent multiple triggers
+        this.localPaddle.sprite.setVelocity(0, 0);
+        this.localPaddle.sprite.body.checkCollision.none = true;
+    }
 
-        this.rightGoal = this.physics.add.sprite(800, 300, null);
-        this.rightGoal.setDisplaySize(10, 600);
-        this.rightGoal.body.setSize(10, 600);
-        this.rightGoal.setImmovable(true);
-        this.rightGoal.setVisible(false);
+    resetPlayers() {
+        // Reset local player
+        this.localPaddle.sprite.body.checkCollision.none = false;
+        this.localPaddle.sprite.setVelocity(0, 0);
+        
+        if (this.playerRole === 'player1') {
+            this.localPaddle.sprite.setPosition(150, 300);
+            this.remotePaddle.sprite.setPosition(650, 300);
+        } else {
+            this.localPaddle.sprite.setPosition(650, 300);
+            this.remotePaddle.sprite.setPosition(150, 300);
+        }
+        
+        // Remote paddle reset is handled by server updates or manual position set here as fallback
+        this.remotePaddle.sprite.setVelocity(0, 0);
     }
 
     sendMessage(message) {
@@ -299,44 +416,58 @@ createFloor() {
     }
 
     update() {
-        if (this.gameEnded) return;
-if (!this.localPaddle || !this.remotePaddle) {
-        return; // ⛑️ No enviar nada hasta que existan
-    }
+        if (this.gameEnded || !this.localPaddle || !this.remotePaddle) return;
 
-        // Handle local paddle input - both players use arrow keys
-        let direction = null;
-        if (this.cursors.up.isDown) {
+        // Push input (E)
+        const isPushDown = Phaser.Input.Keyboard.JustDown(this.keyE);
+
+        if (isPushDown && this.canPush) {
+            this.attemptPush();
+            this.canPush = false;
+            this.time.delayedCall(500, () => this.canPush = true);
+        }
+
+
+        if (!this.localPaddle.isKnockedBack) {
+            let direction = null;
             
-            direction = 'up';
-        }
-         else if (this.cursors.right.isDown) {
-            direction = 'right';
-        } else if (this.cursors.left.isDown) {
-            direction = 'left';
-        } else {
-            direction = 'stop';
+            if (this.cursors.up.isDown || this.wasd.up.isDown) {
+                direction = 'up';
+            } else if (this.cursors.right.isDown || this.wasd.right.isDown) {
+                direction = 'right';
+            } else if (this.cursors.left.isDown || this.wasd.left.isDown) {
+                direction = 'left';
+            } else {
+                direction = 'stop';
+            }
+
+            const speed = 300;
+            if (direction === 'up' && this.localPaddle.sprite.body.touching.down) {
+                this.localPaddle.sprite.setVelocityY(-1500);
+            }       
+            else if (direction === 'right') {
+                this.localPaddle.sprite.setVelocityX(speed);
+                this.localPaddle.sprite.setFlipX(false);
+            } else if (direction === 'left') {
+                this.localPaddle.sprite.setVelocityX(-speed);
+                this.localPaddle.sprite.setFlipX(true);
+            } 
+            else {
+                this.localPaddle.sprite.setVelocityX(0);
+            }
         }
 
-        // Move local paddle
-        const speed = 300;
-        if (direction === 'up' && this.localPaddle.sprite.body.touching.down) {
-            this.localPaddle.sprite.setVelocityY(-1500);
-        }       
-        else if (direction === 'right') {
-            this.localPaddle.sprite.setVelocityX(speed);
-        } else if (direction === 'left') {
-            this.localPaddle.sprite.setVelocityX(-speed);
-        } 
-        else {
-            this.localPaddle.sprite.setVelocityX(0);
-        }
-        // Send paddle position to server
         this.sendMessage({
             type: 'paddleMove',
             x: this.localPaddle.sprite.x,
             y: this.localPaddle.sprite.y,
         });
+
+         // --- Pausa con ESC ---
+                if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
+                          this.scene.launch('PauseScene');
+                        this.scene.pause('MultiplayerGameScene');
+                }
     }
 
     shutdown() {
