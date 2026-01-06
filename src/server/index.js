@@ -146,6 +146,18 @@ wss.on('connection', (ws) => {
           gameRoomService.handlePush(ws, data);
           break;
 
+        case 'powerUpPickup':
+          gameRoomService.handlePowerUpPickup(ws);
+          break;
+
+        case 'requestPowerUpState':
+          gameRoomService.handleRequestPowerUpState(ws);
+          break;
+
+        case 'playerReady':
+          gameRoomService.handlePlayerReady(ws);
+          break;
+
         default:
           console.log('Mensaje desconocido:', data.type);
       }

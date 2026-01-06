@@ -53,6 +53,10 @@ export class PauseScene extends Phaser.Scene {
 
     this.BotonVolverAlMenu.on("pointerdown", () => {
       this.sound.play("click");
+      const original = this.scene.get(originalSceneKey);
+      if (original && original.ws && original.ws.readyState === WebSocket.OPEN) {
+        original.ws.close();
+      }
       this.scene.stop(originalSceneKey);
       this.scene.stop('PauseScene');
       this.scene.start('MenuScene');

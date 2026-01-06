@@ -16,10 +16,13 @@ function createRoom(player1Ws, player2Ws) {
 
     const room = {
       id: roomId,
-      player1: { ws: player1Ws, score: 0 },
-      player2: { ws: player2Ws, score: 0 },
+      player1: { ws: player1Ws, score: 0, hasPowerUp: false },
+      player2: { ws: player2Ws, score: 0, hasPowerUp: false },
       active: true,
-      roundActive: true
+      roundActive: true,
+      powerUp: null,
+      powerUpInterval: null,
+      readyCount: 0
     };
 
     rooms.set(roomId, room);
@@ -37,6 +40,31 @@ function createRoom(player1Ws, player2Ws) {
 
     return roomId;
 }
+
+  function startPowerUpSpawner(room) {
+    const spawn = () => {
+      if (!room.active) return;
+      if (room.powerUp) return;
+      const x = Math.floor(100 + Math.random() * 600);
+      const y = Math.floor(200 + Math.random() * 300);
+      room.powerUp = { x, y };
+      room.player1.ws.send(JSON.stringify({ type: 'powerUpSpawn', x, y }));
+      room.player2.ws.send(JSON.stringify({ type: 'powerUpSpawn', x, y }));
+    };
+    spawn();
+    room.powerUpInterval = setInterval(spawn, 5000);
+  }
+
+  function handlePlayerReady(ws) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+    room.readyCount += 1;
+    if (room.readyCount === 2) {
+      startPowerUpSpawner(room);
+    }
+  }
 
   /**
    * Handle paddle movement from a player
@@ -144,12 +172,33 @@ function createRoom(player1Ws, player2Ws) {
     const opponent = room.player1.ws === ws ? room.player2.ws : room.player1.ws;
 
     if (opponent.readyState === 1) {
+        const role = ws.role;
+        let force = data.force;
+        const player = role === 'player1' ? room.player1 : room.player2;
+        if (player.hasPowerUp && force <= 35) {
+          force = 100;
+          player.hasPowerUp = false;
+        }
         opponent.send(JSON.stringify({
             type: 'push',
             angle: data.angle,
-            force: data.force
+            force
         }));
     }
+  }
+
+  function handlePowerUpPickup(ws) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+    if (!room.powerUp) return;
+    const role = ws.role;
+    const player = role === 'player1' ? room.player1 : room.player2;
+    player.hasPowerUp = true;
+    room.powerUp = null;
+    room.player1.ws.send(JSON.stringify({ type: 'powerUpPickup', player: role }));
+    room.player2.ws.send(JSON.stringify({ type: 'powerUpPickup', player: role }));
   }
 
   /**
@@ -177,7 +226,23 @@ function createRoom(player1Ws, player2Ws) {
 
     // Clean up room
     room.active = false;
+    if (room.powerUpInterval) {
+      clearInterval(room.powerUpInterval);
+      room.powerUpInterval = null;
+    }
     rooms.delete(roomId);
+  }
+
+  function handleRequestPowerUpState(ws) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+    if (room.powerUp) {
+      try {
+        ws.send(JSON.stringify({ type: 'powerUpSpawn', x: room.powerUp.x, y: room.powerUp.y }));
+      } catch {}
+    }
   }
 
   /**
@@ -193,6 +258,9 @@ function createRoom(player1Ws, player2Ws) {
     handlePaddleMove,
     handlePlayerFell,
     handlePush,
+    handlePowerUpPickup,
+    handleRequestPowerUpState,
+    handlePlayerReady,
     handleDisconnect,
     getActiveRoomCount
   };

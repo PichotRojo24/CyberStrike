@@ -40,7 +40,6 @@ export default class LobbyScene extends Phaser.Scene {
       this.scene.start("MenuScene");
     });
 
-    // Title
     this.add.text(410, 100, "ONLINE MULTIPLAYER", {
         fontFamily: "Orbitron",
         fontSize: "48px",
@@ -48,19 +47,16 @@ export default class LobbyScene extends Phaser.Scene {
         letterSpacing: 4
       }).setOrigin(0.5);
 
-    // Status text
     this.statusText = this.add.text(width / 2, height / 2 - 50, 'Connecting to server...', {
       fontSize: '24px',
       color: '#ffff00'
     }).setOrigin(0.5);
 
-    // Player count text
     this.playerCountText = this.add.text(width / 2, height / 2 + 20, '', {
       fontSize: '20px',
       color: '#00ff00'
     }).setOrigin(0.5);
 
-    // Connect to WebSocket server
     this.connectToServer();
   }
 
@@ -69,7 +65,6 @@ export default class LobbyScene extends Phaser.Scene {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.close();
       }
-      // Connect to WebSocket server (same host as web server)
       const wsUrl = `ws://localhost:3000`;
 
       this.ws = new WebSocket(wsUrl);
@@ -78,7 +73,6 @@ export default class LobbyScene extends Phaser.Scene {
         console.log('Connected to WebSocket server');
         this.statusText.setText('Waiting for opponent...');
 
-        // Join matchmaking queue
         this.ws.send(JSON.stringify({ type: 'joinQueue' }));
       };
 

@@ -172,7 +172,7 @@ collectPowerUp(playerId) {
         
         const currentScore = parseInt(this.scoreLeft.text);
         this.scoreLeft.setText((currentScore + 1).toString());
-        if(currentScore == 3 ){
+        if(currentScore == 2 ){
             this.scene.start('LeftWinScene');
         }
 
@@ -249,12 +249,20 @@ pushOpponent(pusher, target) {
          this.playersPower[pusher.id] = false; // se consume el power-up
 }
 
-const offsetX = Math.cos(angle) * force;
-const offsetY = Math.sin(angle) * force;
+const speed = force * 8;
+let vx = Math.cos(angle) * speed;
+let vy = Math.sin(angle) * speed;
 
+// Evitar empuje vertical hacia abajo si el objetivo está en el suelo
+if (target.sprite.body && target.sprite.body.touching && target.sprite.body.touching.down && vy > 0) {
+    vy = 0;
+}
 
-            target.sprite.x += offsetX;
-            target.sprite.y += offsetY;
+target.sprite.setVelocity(vx, vy);
+target.isKnockedBack = true;
+this.time.delayedCall(300, () => {
+    if (target) target.isKnockedBack = false;
+});
         }
     }
 
