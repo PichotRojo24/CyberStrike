@@ -23,7 +23,6 @@ preload() {
 
   this.load.audio("MusicaJuego", "assets/Musica y Sonido/Musica en combate.mp3");
   this.load.audio("MusicaBoton", "assets/Musica y Sonido/Flecha Sobre Boton.mp3");
-  this.load.audio("loseMusic", "assets/Musica y Sonido/Seleccion de modo.mp3");
 
 }
 
@@ -183,7 +182,7 @@ collectPowerUp(playerId) {
         this.resetPlayer();
         const currentScore = parseInt(this.rightScore.text);
         this.rightScore.setText((currentScore + 1).toString());
-               if(currentScore == 3 ){
+               if(currentScore == 2 ){
             this.scene.start('RightWinScene');
         }
     }

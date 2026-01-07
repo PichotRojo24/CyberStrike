@@ -130,9 +130,9 @@ function createRoom(player1Ws, player2Ws) {
     room.player1.ws.send(JSON.stringify(scoreUpdate));
     room.player2.ws.send(JSON.stringify(scoreUpdate));
 
-    // Check win condition (first to 2)
-    if (room.player1.score >= 2 || room.player2.score >= 2) {
-      const winner = room.player1.score >= 2 ? 'player1' : 'player2';
+    // Check win condition (first to 3)
+    if (room.player1.score >= 3 || room.player2.score >= 3) {
+      const winner = room.player1.score >= 3 ? 'player1' : 'player2';
 
       const gameOverMsg = {
         type: 'gameOver',

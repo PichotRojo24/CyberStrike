@@ -67,7 +67,7 @@ preload() {
             color: '#00ff00'
         });
 
-        const roleText = this.playerRole === 'player1' ? 'You are Player 1 (Left)' : 'You are Player 2 (Right)';
+        const roleText = this.playerRole === 'player1' ? 'Jugador 1 (Left)' : 'Jugador 2 (Right)';
         this.add.text(400, 20, roleText, {
             fontSize: '16px',
             color: '#ffff00'
@@ -99,8 +99,6 @@ preload() {
 
         this.physics.add.collider(this.localPaddle.sprite, this.remotePaddle.sprite, this.handlePaddleCollision, null, this);
         
-        this.sendMessage({ type: 'requestPowerUpState' });
-        this.sendMessage({ type: 'playerReady' });
         this.time.addEvent({
             delay: 1500,
             loop: true,
@@ -114,8 +112,8 @@ preload() {
 
     setUpPlayers() {
         if (this.playerRole === 'player1') {
-            this.localPaddle = new Paddle(this, 'player1', 150, 300);
-            this.remotePaddle = new Paddle(this, 'player2', 650, 300);
+            this.localPaddle = new Paddle(this, 'player1', 250, 300);
+            this.remotePaddle = new Paddle(this, 'player2', 550, 300);
             
             this.localPaddle.sprite.body.allowGravity = true;
             
@@ -123,8 +121,8 @@ preload() {
             this.remotePaddle.sprite.setImmovable(true);
             this.remotePaddle.sprite.setVelocity(0, 0);
         } else {
-            this.localPaddle = new Paddle(this, 'player2', 650, 300);
-            this.remotePaddle = new Paddle(this, 'player1', 150, 300);
+            this.localPaddle = new Paddle(this, 'player2', 550, 300);
+            this.remotePaddle = new Paddle(this, 'player1', 250, 300);
             
             this.localPaddle.sprite.body.allowGravity = true;
             
@@ -154,29 +152,42 @@ createFloor() {
         this.physics.add.collider(this.floor, this.localPaddle.sprite);
     }
     setupWebSocketListeners() {
-        this.ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                this.handleServerMessage(data);
-            } catch (error) {
-                console.error('Error parsing server message:', error);
-            }
-        };
 
-        this.ws.onclose = () => {
-            console.log('WebSocket connection closed');
-            if (!this.gameEnded) {
-                this.handleDisconnection();
-            }
-        };
+    // 🔵 Se llama cuando el WebSocket termina de conectarse
+    this.ws.onopen = () => {
+        console.log("WebSocket connected!");
 
-        this.ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            if (!this.gameEnded) {
-                this.handleDisconnection();
-            }
-        };
-    }
+        // Ahora sí es SEGURO enviar mensajes iniciales
+        this.sendMessage({ type: 'requestPowerUpState' });
+        this.sendMessage({ type: 'playerReady' });
+    };
+
+    // 🔵 Mensajes entrantes del servidor
+    this.ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            this.handleServerMessage(data);
+        } catch (error) {
+            console.error('Error parsing server message:', error);
+        }
+    };
+
+    // 🔵 Cuando el servidor cierra la conexión
+    this.ws.onclose = () => {
+        console.log('WebSocket connection closed');
+        if (!this.gameEnded) {
+            this.handleDisconnection();
+        }
+    };
+
+    // 🔵 Errores del WebSocket
+    this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        if (!this.gameEnded) {
+            this.handleDisconnection();
+        }
+    };
+}
 
     handleServerMessage(data) {
         switch (data.type) {
@@ -406,29 +417,32 @@ createFloor() {
 
     handlePlayerFall() {
         if (this.gameEnded) return;
-        
+          //this.localPaddle.sprite.body.checkCollision.none = true;
         this.sendMessage({ type: 'playerFell', player: this.playerRole });
         
         this.localPaddle.sprite.setVelocity(0, 0);
-        this.localPaddle.sprite.body.checkCollision.none = true;
+      
     }
 
     resetPlayers() {
 
-        this.localPaddle.sprite.body.checkCollision.none = false;
-        this.localPaddle.sprite.setVelocity(0, 0);
-        
-        if (this.playerRole === 'player1') {
-            this.localPaddle.sprite.setPosition(150, 300);
-            this.remotePaddle.sprite.setPosition(650, 300);
-        } else {
-            this.localPaddle.sprite.setPosition(650, 300);
-            this.remotePaddle.sprite.setPosition(150, 300);
-        }
-        this.lastRemoteX = this.remotePaddle.sprite.x;
-        
-        this.remotePaddle.sprite.setVelocity(0, 0);
+    // Primero reposiciona
+    if (this.playerRole === 'player1') {
+        this.localPaddle.sprite.setPosition(250, 450);
+        this.remotePaddle.sprite.setPosition(550, 450);
+    } else {
+        this.localPaddle.sprite.setPosition(550, 450);
+        this.remotePaddle.sprite.setPosition(250, 450);
     }
+
+    // Luego reactiva colisiones
+    this.localPaddle.sprite.body.checkCollision.none = false;
+
+    this.localPaddle.sprite.setVelocity(0, 0);
+    this.remotePaddle.sprite.setVelocity(0, 0);
+
+    this.lastRemoteX = this.remotePaddle.sprite.x;
+}
 
     spawnPowerUp(x, y) {
         if (this.powerUp) return;
