@@ -22,7 +22,6 @@ Todos los integrantes participaron activamente tanto en el **desarrollo del jueg
 
 ### 1️⃣ Instalar dependencias
 Desde la carpeta raíz del proyecto:
-```bash
 npm install
 
 
