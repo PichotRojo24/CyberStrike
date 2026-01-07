@@ -12,7 +12,7 @@
 
 El objetivo es derribar al oponente fuera de la plataforma mediante empujes y ataques estratégicos.
 
-![Logo del juego](docs/images/logo.png)
+![Logo del juego](public/assets/Logo/Logo.png)
 
 ---
 
