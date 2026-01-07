@@ -40,14 +40,14 @@ export default class LobbyScene extends Phaser.Scene {
       this.scene.start("MenuScene");
     });
 
-    this.add.text(410, 100, "ONLINE MULTIPLAYER", {
+    this.add.text(410, 100, "MULTIJUGADOR EN LINEA", {
         fontFamily: "Orbitron",
         fontSize: "48px",
         color: "#eaeaea",
         letterSpacing: 4
       }).setOrigin(0.5);
 
-    this.statusText = this.add.text(width / 2, height / 2 - 50, 'Connecting to server...', {
+    this.statusText = this.add.text(width / 2, height / 2 - 50, 'Conectando al servidor...', {
       fontSize: '24px',
       color: '#ffff00'
     }).setOrigin(0.5);
@@ -75,8 +75,8 @@ export default class LobbyScene extends Phaser.Scene {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-            console.log('Connected to WebSocket server');
-            this.statusText.setText('Waiting for opponent...');
+            console.log('conectado al servidor WebSocket');
+            this.statusText.setText('Esperando oponente...');
             this.ws.send(JSON.stringify({ type: 'joinQueue' }));
         };
 
@@ -90,22 +90,22 @@ export default class LobbyScene extends Phaser.Scene {
         };
 
         this.ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.error('Error WebSocket:', error);
             this.statusText.setText('Connection error!');
             this.statusText.setColor('#ff0000');
         };
 
         this.ws.onclose = () => {
-            console.log('WebSocket connection closed');
+            console.log('conexión WebSocket cerrada');
             if (this.scene.isActive('LobbyScene')) {
-                this.statusText.setText('Connection lost!');
+                this.statusText.setText('Conexión perdida!');
                 this.statusText.setColor('#ff0000');
             }
         };
 
     } catch (error) {
-        console.error('Error connecting to server:', error);
-        this.statusText.setText('Failed to connect!');
+        console.error('Error al conectar al servidor:', error);
+        this.statusText.setText('Fallo la conexión!');
         this.statusText.setColor('#ff0000');
     }
 }
@@ -127,7 +127,7 @@ export default class LobbyScene extends Phaser.Scene {
   break;
 
 case 'matchFound':
-  console.log('✅ Match found!', data);
+  console.log('✅ Partida Encontrada!', data);
   this.scene.start('MultiplayerGameScene', {
     ws: this.ws,
     playerRole: data.role,

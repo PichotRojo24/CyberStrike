@@ -14,6 +14,7 @@ export class MenuOpciones extends Phaser.Scene {
         this.load.image('BotonAudio', 'assets/BotonesUI/Boton.png');
         this.load.image('Barra', 'assets/BotonesUI/Barra.png');
         this.load.image('BarraMovediza', 'assets/BotonesUI/Barra movediza.png');
+        this.load.image('BotonCreditos', 'assets/BotonesUI/Creditos.png');
         }
 
     create() {
@@ -32,12 +33,12 @@ export class MenuOpciones extends Phaser.Scene {
     const centerX = this.cameras.main.width / 2;
     const baseY = this.cameras.main.height / 2;
 
-    this.Barra = this.add.image(centerX, baseY - 60, "Barra");
+    this.Barra = this.add.image(centerX, baseY - 100, "Barra");
 
     // Knob
     this.BotonAudio = this.add.image(
     centerX,
-    baseY - 60,
+    baseY - 100,
     "BotonAudio"
     ).setInteractive({ draggable: true });
 
@@ -65,12 +66,13 @@ export class MenuOpciones extends Phaser.Scene {
 
 
     this.BotonAtras = this.add.image(centerX, baseY + 240, "BotonAtras");
-    this.BotonControles = this.add.image(centerX, baseY + 60, "BotonControles");
+    this.BotonControles = this.add.image(centerX, baseY + 6, "BotonControles");
+    this.BotonCreditos = this.add.image(centerX, baseY + 100, "BotonCreditos");
 
     // Interactividad
     this.BotonAtras.setInteractive({ useHandCursor: true });
     this.BotonControles.setInteractive({ useHandCursor: true });
-
+    this.BotonCreditos.setInteractive({ useHandCursor: true });
 
     // Hover
     const hoverEffect = (btn) => {
@@ -80,6 +82,7 @@ export class MenuOpciones extends Phaser.Scene {
 
     hoverEffect(this.BotonAtras);
     hoverEffect(this.BotonControles);
+    hoverEffect(this.BotonCreditos);
 
     // Clicks (UNO SOLO por botón)
     this.BotonAtras.on("pointerdown", () => {
@@ -91,6 +94,11 @@ export class MenuOpciones extends Phaser.Scene {
     this.BotonControles.on("pointerdown", () => {
       this.sound.play("click");
       this.scene.start("MenuControles");
+    });
+
+    this.BotonCreditos.on("pointerdown", () => {
+      this.sound.play("click");
+      this.scene.start("CreditsScene");
     });
 
     this.BotonAudio.on("dragend", () => {

@@ -6,6 +6,7 @@ import { PauseScene } from './scenes/PauseScene.js';
 import { MenuOpciones } from './scenes/MenuOpciones.js';
 import { ConnectionLostScene } from './scenes/ConnectionLostScene.js';
 import LobbyScene from './scenes/LobbyScene.js';
+import { CreditsScene } from './scenes/CreditsScene.js';
 import { MultiplayerGameScene } from './scenes/MultiplayerGameScene.js';
 import { LeftWinSceneMultiplayer } from './scenes/LeftWinSceneMultiplayer.js';
 import { RightWinSceneMultiplayer } from './scenes/RightWinSceneMultiplayer.js';
@@ -28,7 +29,7 @@ const config = {
             debug: false
         }
     },
-    scene: [MenuScene,MenuControles, GameScene, PauseScene, MenuOpciones, ConnectionLostScene, LobbyScene, MultiplayerGameScene, LeftWinSceneMultiplayer, RightWinSceneMultiplayer, LeftLoseSceneMultiplayer, RightLoseSceneMultiplayer, LeftWinScene, RightWinScene],
+    scene: [MenuScene,MenuControles, GameScene, PauseScene, MenuOpciones, ConnectionLostScene, LobbyScene, CreditsScene, MultiplayerGameScene, LeftWinSceneMultiplayer, RightWinSceneMultiplayer, LeftLoseSceneMultiplayer, RightLoseSceneMultiplayer, LeftWinScene, RightWinScene],
     backgroundColor: '#1a1a2e',
 }
 

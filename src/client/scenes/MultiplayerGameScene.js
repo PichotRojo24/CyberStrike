@@ -382,7 +382,7 @@ createFloor() {
         this.remotePaddle.sprite.setVelocity(0, 0);
         this.physics.pause();
 
-        this.add.text(400, 250, 'Opponent Disconnected', {
+        this.add.text(400, 250, 'Oponente desconectado', {
             fontSize: '48px',
             color: '#ff0000'
         }).setOrigin(0.5);
@@ -391,7 +391,7 @@ createFloor() {
     }
 
     createMenuButton() {
-        const menuBtn = this.add.text(400, 400, 'Return to Main Menu', {
+        const menuBtn = this.add.text(400, 400, 'Volver al Menú Principal', {
             fontSize: '32px',
             color: '#ffffff',
         }).setOrigin(0.5)

@@ -1,6 +1,4 @@
 import Phaser from 'phaser';
-
-
 export class MenuControles extends Phaser.Scene {
     constructor() {
         super('MenuControles');
