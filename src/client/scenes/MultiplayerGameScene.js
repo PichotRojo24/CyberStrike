@@ -112,8 +112,8 @@ preload() {
 
     setUpPlayers() {
         if (this.playerRole === 'player1') {
-            this.localPaddle = new Paddle(this, 'player1', 150, 300);
-            this.remotePaddle = new Paddle(this, 'player2', 650, 300);
+            this.localPaddle = new Paddle(this, 'player1', 250, 300);
+            this.remotePaddle = new Paddle(this, 'player2', 550, 300);
             
             this.localPaddle.sprite.body.allowGravity = true;
             
@@ -121,8 +121,8 @@ preload() {
             this.remotePaddle.sprite.setImmovable(true);
             this.remotePaddle.sprite.setVelocity(0, 0);
         } else {
-            this.localPaddle = new Paddle(this, 'player2', 650, 300);
-            this.remotePaddle = new Paddle(this, 'player1', 150, 300);
+            this.localPaddle = new Paddle(this, 'player2', 550, 300);
+            this.remotePaddle = new Paddle(this, 'player1', 250, 300);
             
             this.localPaddle.sprite.body.allowGravity = true;
             
@@ -417,29 +417,32 @@ createFloor() {
 
     handlePlayerFall() {
         if (this.gameEnded) return;
-        
+          //this.localPaddle.sprite.body.checkCollision.none = true;
         this.sendMessage({ type: 'playerFell', player: this.playerRole });
         
         this.localPaddle.sprite.setVelocity(0, 0);
-        this.localPaddle.sprite.body.checkCollision.none = true;
+      
     }
 
     resetPlayers() {
 
-        this.localPaddle.sprite.body.checkCollision.none = false;
-        this.localPaddle.sprite.setVelocity(0, 0);
-        
-        if (this.playerRole === 'player1') {
-            this.localPaddle.sprite.setPosition(150, 300);
-            this.remotePaddle.sprite.setPosition(650, 300);
-        } else {
-            this.localPaddle.sprite.setPosition(650, 300);
-            this.remotePaddle.sprite.setPosition(150, 300);
-        }
-        this.lastRemoteX = this.remotePaddle.sprite.x;
-        
-        this.remotePaddle.sprite.setVelocity(0, 0);
+    // Primero reposiciona
+    if (this.playerRole === 'player1') {
+        this.localPaddle.sprite.setPosition(250, 450);
+        this.remotePaddle.sprite.setPosition(550, 450);
+    } else {
+        this.localPaddle.sprite.setPosition(550, 450);
+        this.remotePaddle.sprite.setPosition(250, 450);
     }
+
+    // Luego reactiva colisiones
+    this.localPaddle.sprite.body.checkCollision.none = false;
+
+    this.localPaddle.sprite.setVelocity(0, 0);
+    this.remotePaddle.sprite.setVelocity(0, 0);
+
+    this.lastRemoteX = this.remotePaddle.sprite.x;
+}
 
     spawnPowerUp(x, y) {
         if (this.powerUp) return;
