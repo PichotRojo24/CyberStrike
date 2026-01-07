@@ -125,6 +125,11 @@ wss.on("connection", (ws) => {
           gameRoomService.handlePlayerReady(ws);
           break;
 
+        case 'leaveRoom':
+           matchmakingService.leaveQueue(ws);
+           gameRoomService.handleDisconnect(ws);
+          break;
+
         default:
           console.log("Mensaje desconocido:", data.type);
       }
@@ -133,11 +138,12 @@ wss.on("connection", (ws) => {
     }
   });
 
-  ws.on("close", () => {
-    console.log("❌ Cliente WebSocket desconectado");
-    matchmakingService.leaveQueue(ws);
-    gameRoomService.handleDisconnect(ws);
-  });
+  ws.on('close', () => {
+  console.log('Cliente WebSocket desconectado');
+  matchmakingService.leaveQueue(ws);
+  gameRoomService.handleDisconnect(ws);
+});
+
 
   ws.on("error", (error) => {
     console.error("Error en WebSocket:", error);
