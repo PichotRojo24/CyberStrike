@@ -99,8 +99,6 @@ preload() {
 
         this.physics.add.collider(this.localPaddle.sprite, this.remotePaddle.sprite, this.handlePaddleCollision, null, this);
         
-        this.sendMessage({ type: 'requestPowerUpState' });
-        this.sendMessage({ type: 'playerReady' });
         this.time.addEvent({
             delay: 1500,
             loop: true,
@@ -154,29 +152,42 @@ createFloor() {
         this.physics.add.collider(this.floor, this.localPaddle.sprite);
     }
     setupWebSocketListeners() {
-        this.ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                this.handleServerMessage(data);
-            } catch (error) {
-                console.error('Error parsing server message:', error);
-            }
-        };
 
-        this.ws.onclose = () => {
-            console.log('WebSocket connection closed');
-            if (!this.gameEnded) {
-                this.handleDisconnection();
-            }
-        };
+    // 🔵 Se llama cuando el WebSocket termina de conectarse
+    this.ws.onopen = () => {
+        console.log("WebSocket connected!");
 
-        this.ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            if (!this.gameEnded) {
-                this.handleDisconnection();
-            }
-        };
-    }
+        // Ahora sí es SEGURO enviar mensajes iniciales
+        this.sendMessage({ type: 'requestPowerUpState' });
+        this.sendMessage({ type: 'playerReady' });
+    };
+
+    // 🔵 Mensajes entrantes del servidor
+    this.ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            this.handleServerMessage(data);
+        } catch (error) {
+            console.error('Error parsing server message:', error);
+        }
+    };
+
+    // 🔵 Cuando el servidor cierra la conexión
+    this.ws.onclose = () => {
+        console.log('WebSocket connection closed');
+        if (!this.gameEnded) {
+            this.handleDisconnection();
+        }
+    };
+
+    // 🔵 Errores del WebSocket
+    this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        if (!this.gameEnded) {
+            this.handleDisconnection();
+        }
+    };
+}
 
     handleServerMessage(data) {
         switch (data.type) {

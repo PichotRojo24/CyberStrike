@@ -60,50 +60,55 @@ export default class LobbyScene extends Phaser.Scene {
     this.connectToServer();
   }
 
-  connectToServer() {
+ connectToServer() {
     try {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.close();
-      }
-      const wsUrl = `ws://localhost:3000`;
-
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        console.log('Connected to WebSocket server');
-        this.statusText.setText('Waiting for opponent...');
-
-        this.ws.send(JSON.stringify({ type: 'joinQueue' }));
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          this.handleServerMessage(data);
-        } catch (error) {
-          console.error('Error parsing server message:', error);
+        // Cerrar cualquier WebSocket previo sin importar su estado
+        if (this.ws) {
+            try { this.ws.onopen = null; } catch(e){}
+            try { this.ws.onmessage = null; } catch(e){}
+            try { this.ws.onerror = null; } catch(e){}
+            try { this.ws.onclose = null; } catch(e){}
+            try { this.ws.close(); } catch(e){}
         }
-      };
 
-      this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        this.statusText.setText('Connection error!');
-        this.statusText.setColor('#ff0000');
-      };
+        const wsUrl = `ws://localhost:3000`;
+        this.ws = new WebSocket(wsUrl);
 
-      this.ws.onclose = () => {
-        console.log('WebSocket connection closed');
-        if (this.scene.isActive('LobbyScene')) {
-          this.statusText.setText('Connection lost!');
-          this.statusText.setColor('#ff0000');
-        }
-      };
+        this.ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+            this.statusText.setText('Waiting for opponent...');
+            this.ws.send(JSON.stringify({ type: 'joinQueue' }));
+        };
+
+        this.ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                this.handleServerMessage(data);
+            } catch (error) {
+                console.error('Error parsing server message:', error);
+            }
+        };
+
+        this.ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            this.statusText.setText('Connection error!');
+            this.statusText.setColor('#ff0000');
+        };
+
+        this.ws.onclose = () => {
+            console.log('WebSocket connection closed');
+            if (this.scene.isActive('LobbyScene')) {
+                this.statusText.setText('Connection lost!');
+                this.statusText.setColor('#ff0000');
+            }
+        };
+
     } catch (error) {
-      console.error('Error connecting to server:', error);
-      this.statusText.setText('Failed to connect!');
-      this.statusText.setColor('#ff0000');
+        console.error('Error connecting to server:', error);
+        this.statusText.setText('Failed to connect!');
+        this.statusText.setColor('#ff0000');
     }
-  }
+}
 
   handleServerMessage(data) {
     switch (data.type) {
