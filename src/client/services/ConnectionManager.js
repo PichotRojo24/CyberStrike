@@ -1,19 +1,36 @@
+// src/client/services/ConnectionManager.js
 /**
- * Servicio para gestionar la conexión con el servidor
- * Maneja el polling al endpoint /api/connected y detecta pérdidas de conexión
+ * Servicio para gestionar la conexión con el servidor.
+ * - Hace polling al endpoint /api/connected
+ * - NO usa localhost (sirve para 2 PCs en la misma red)
+ * - Asume que el SERVER corre en el puerto 3000
  */
 export class ConnectionManager {
   constructor() {
     this.connectedCount = 0;
     this.isConnected = false;
     this.lastCheckTime = 0;
-    this.checkInterval = 2000; // Comprobar cada 2 segundos
+    this.checkInterval = 2000; // cada 2s
     this.listeners = [];
     this.sessionId = this.generateSessionId();
     this.intervalId = null;
 
-    // Iniciar el polling automático
+    // ✅ URL real del servidor (mismo hostname del navegador, puerto 3000)
+    this.serverBaseUrl = this.getServerBaseUrl();
+
+    // Iniciar polling automático
     this.startPolling();
+  }
+
+  /**
+   * Construye la base URL del server para que funcione en LAN:
+   * - Si entrás al juego por http://192.168.x.x:3000 -> usa ese host
+   * - Si entrás por http://192.168.x.x:8080 -> igual apunta a 192.168.x.x:3000
+   */
+  getServerBaseUrl() {
+    const hostname = window.location.hostname; // IP o dominio actual (no incluye puerto)
+    const protocol = window.location.protocol; // http: o https:
+    return `${protocol}//${hostname}:3000`;
   }
 
   /**
@@ -30,8 +47,7 @@ export class ConnectionManager {
    */
   async checkConnection() {
     try {
-      const response = await fetch('http://localhost:3000/api/connected', {
-
+      const response = await fetch(`${this.serverBaseUrl}/api/connected`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -43,7 +59,8 @@ export class ConnectionManager {
 
       if (response.ok) {
         const data = await response.json();
-        this.connectedCount = data.connected;
+
+        this.connectedCount = data.connected ?? 0;
         this.isConnected = true;
         this.lastCheckTime = Date.now();
 
@@ -73,7 +90,7 @@ export class ConnectionManager {
 
   /**
    * Registrar un listener para cambios de conexión
-   * @param {Function} callback - Función que se llamará cuando cambie el estado
+   * @param {Function} callback
    */
   addListener(callback) {
     this.listeners.push(callback);
@@ -81,7 +98,7 @@ export class ConnectionManager {
 
   /**
    * Eliminar un listener
-   * @param {Function} callback - Función a eliminar
+   * @param {Function} callback
    */
   removeListener(callback) {
     const index = this.listeners.indexOf(callback);
@@ -92,7 +109,7 @@ export class ConnectionManager {
 
   /**
    * Notificar a todos los listeners
-   * @param {Object} data - Datos del estado de conexión
+   * @param {{connected: boolean, count: number}} data
    */
   notifyListeners(data) {
     this.listeners.forEach(listener => listener(data));
@@ -100,7 +117,7 @@ export class ConnectionManager {
 
   /**
    * Obtener el estado actual de conexión
-   * @returns {Object}
+   * @returns {{isConnected: boolean, connectedCount: number, lastCheckTime: number}}
    */
   getStatus() {
     return {
@@ -114,9 +131,7 @@ export class ConnectionManager {
    * Iniciar el polling automático de conexión
    */
   startPolling() {
-    if (this.intervalId) {
-      return; // Ya está corriendo
-    }
+    if (this.intervalId) return;
 
     // Comprobar inmediatamente
     this.checkConnection();
@@ -138,5 +153,5 @@ export class ConnectionManager {
   }
 }
 
-// Crear instancia singleton
+// ✅ Singleton
 export const connectionManager = new ConnectionManager();

@@ -11,38 +11,69 @@ export function createGameRoomService() {
    * @param {WebSocket} player2Ws - Player 2's WebSocket
    * @returns {string} Room ID
    */
-  function createRoom(player1Ws, player2Ws) {
+function createRoom(player1Ws, player2Ws) {
     const roomId = `room_${nextRoomId++}`;
 
     const room = {
       id: roomId,
-      player1: {
-        ws: player1Ws,
-        score: 0
-      },
-      player2: {
-        ws: player2Ws,
-        score: 0
-      },
+      player1: { ws: player1Ws, score: 0, hasPowerUp: false },
+      player2: { ws: player2Ws, score: 0, hasPowerUp: false },
       active: true,
-      ballActive: true // Track if ball is in play (prevents duplicate goals)
+      roundActive: true,
+      powerUp: null,
+      powerUpInterval: null,
+      readyCount: 0
     };
 
     rooms.set(roomId, room);
 
-    // Store room ID on WebSocket for quick lookup
     player1Ws.roomId = roomId;
     player2Ws.roomId = roomId;
 
+    // ASIGNAR ROLES
+    player1Ws.role = 'player1';
+    player2Ws.role = 'player2';
+
+    // ENVIAR ROLES AL CLIENTE
+    player1Ws.send(JSON.stringify({ type: 'role', role: 'player1' }));
+    player2Ws.send(JSON.stringify({ type: 'role', role: 'player2' }));
+
     return roomId;
+}
+
+  function startPowerUpSpawner(room) {
+    const spawn = () => {
+      if (!room.active) return;
+      if (room.powerUp) return;
+      const x = Math.floor(100 + Math.random() * 600);
+      const y = Math.floor(200 + Math.random() * 300);
+      room.powerUp = { x, y };
+      room.player1.ws.send(JSON.stringify({ type: 'powerUpSpawn', x, y }));
+      room.player2.ws.send(JSON.stringify({ type: 'powerUpSpawn', x, y }));
+    };
+    spawn();
+    room.powerUpInterval = setInterval(spawn, 5000);
+  }
+
+  function handlePlayerReady(ws) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+    room.readyCount += 1;
+    if (room.readyCount === 2) {
+      startPowerUpSpawner(room);
+    }
   }
 
   /**
    * Handle paddle movement from a player
    * @param {WebSocket} ws - Player's WebSocket
+   * @param {number} x - Paddle X position
    * @param {number} y - Paddle Y position
    */
-  function handlePaddleMove(ws, y) {
+  function handlePaddleMove(ws,x, y) {
+    console.log("SERVER RECEIVED:", x, y);
     const roomId = ws.roomId;
     if (!roomId) return;
 
@@ -54,37 +85,38 @@ export function createGameRoomService() {
 
     if (opponent.readyState === 1) { // WebSocket.OPEN
       opponent.send(JSON.stringify({
-        type: 'paddleUpdate',
-        y
-      }));
+    type: 'paddleUpdate',
+    y:y,
+    x: x,
+    player: ws.role   
+}));
+
     }
   }
 
   /**
-   * Handle goal event from a player
+   * Handle player fell event
    * @param {WebSocket} ws - Player's WebSocket
-   * @param {string} side - Which side scored ('left' or 'right')
+   * @param {string} fallenPlayerRole - Which player fell ('player1' or 'player2')
    */
-  function handleGoal(ws, side) {
+  function handlePlayerFell(ws, fallenPlayerRole) {
     const roomId = ws.roomId;
     if (!roomId) return;
 
     const room = rooms.get(roomId);
     if (!room || !room.active) return;
 
-    // Prevent duplicate goal detection (both clients send goal event)
-    // Only process goal if ball is active
-    if (!room.ballActive) {
-      return; // Ball not in play, ignore goal
+    // Prevent duplicate score detection
+    if (!room.roundActive) {
+      return; 
     }
-    room.ballActive = false; // Mark ball as inactive until relaunched
+    room.roundActive = false; 
 
     // Update scores
-    // When ball hits LEFT goal (x=0), player2 scores (player1 missed)
-    // When ball hits RIGHT goal (x=800), player1 scores (player2 missed)
-    if (side === 'left') {
+    // If player1 fell, player2 scores. If player2 fell, player1 scores.
+    if (fallenPlayerRole === 'player1') {
       room.player2.score++;
-    } else if (side === 'right') {
+    } else if (fallenPlayerRole === 'player2') {
       room.player1.score++;
     }
 
@@ -98,9 +130,9 @@ export function createGameRoomService() {
     room.player1.ws.send(JSON.stringify(scoreUpdate));
     room.player2.ws.send(JSON.stringify(scoreUpdate));
 
-    // Check win condition (first to 2)
-    if (room.player1.score >= 2 || room.player2.score >= 2) {
-      const winner = room.player1.score >= 2 ? 'player1' : 'player2';
+    // Check win condition (first to 3)
+    if (room.player1.score >= 3 || room.player2.score >= 3) {
+      const winner = room.player1.score >= 3 ? 'player1' : 'player2';
 
       const gameOverMsg = {
         type: 'gameOver',
@@ -115,33 +147,58 @@ export function createGameRoomService() {
       // Mark room as inactive
       room.active = false;
     } else {
-      // Relaunch ball after 1 second delay
+      // Start next round after delay
       setTimeout(() => {
         if (room.active) {
-          // Generate new ball direction
-          const angle = (Math.random() * 60 - 30) * (Math.PI / 180); // -30 to 30 degrees
-          const speed = 300;
-          const ballData = {
-            x: 400,
-            y: 300,
-            vx: speed * Math.cos(angle),
-            vy: speed * Math.sin(angle)
-          };
-
-          // Send ball relaunch to both players
-          const relaunchMsg = {
-            type: 'ballRelaunch',
-            ball: ballData
-          };
-
-          room.player1.ws.send(JSON.stringify(relaunchMsg));
-          room.player2.ws.send(JSON.stringify(relaunchMsg));
-
-          // Mark ball as active again
-          room.ballActive = true;
+          room.roundActive = true;
+          // No need to send ballRelaunch, clients handle reset on scoreUpdate or just continue
         }
       }, 1000);
     }
+  }
+
+  /**
+   * Handle push event (relay to opponent)
+   * @param {WebSocket} ws - Pusher's WebSocket
+   * @param {Object} data - Push data (angle, force)
+   */
+  function handlePush(ws, data) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+
+    const opponent = room.player1.ws === ws ? room.player2.ws : room.player1.ws;
+
+    if (opponent.readyState === 1) {
+        const role = ws.role;
+        let force = data.force;
+        const player = role === 'player1' ? room.player1 : room.player2;
+        if (player.hasPowerUp && force <= 35) {
+          force = 100;
+          player.hasPowerUp = false;
+        }
+        opponent.send(JSON.stringify({
+            type: 'push',
+            angle: data.angle,
+            force
+        }));
+    }
+  }
+
+  function handlePowerUpPickup(ws) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+    if (!room.powerUp) return;
+    const role = ws.role;
+    const player = role === 'player1' ? room.player1 : room.player2;
+    player.hasPowerUp = true;
+    room.powerUp = null;
+    room.player1.ws.send(JSON.stringify({ type: 'powerUpPickup', player: role }));
+    room.player2.ws.send(JSON.stringify({ type: 'powerUpPickup', player: role }));
   }
 
   /**
@@ -169,7 +226,23 @@ export function createGameRoomService() {
 
     // Clean up room
     room.active = false;
+    if (room.powerUpInterval) {
+      clearInterval(room.powerUpInterval);
+      room.powerUpInterval = null;
+    }
     rooms.delete(roomId);
+  }
+
+  function handleRequestPowerUpState(ws) {
+    const roomId = ws.roomId;
+    if (!roomId) return;
+    const room = rooms.get(roomId);
+    if (!room || !room.active) return;
+    if (room.powerUp) {
+      try {
+        ws.send(JSON.stringify({ type: 'powerUpSpawn', x: room.powerUp.x, y: room.powerUp.y }));
+      } catch {}
+    }
   }
 
   /**
@@ -183,7 +256,11 @@ export function createGameRoomService() {
   return {
     createRoom,
     handlePaddleMove,
-    handleGoal,
+    handlePlayerFell,
+    handlePush,
+    handlePowerUpPickup,
+    handleRequestPowerUpState,
+    handlePlayerReady,
     handleDisconnect,
     getActiveRoomCount
   };
